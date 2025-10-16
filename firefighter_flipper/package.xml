@@ -8,6 +8,8 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>nav_msgs</depend>          <!-- ✅ 추가 -->
+  <depend>Eigen3</depend>            <!-- ✅ 권장: eigen3_cmake_module와 함께 명시 -->
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>

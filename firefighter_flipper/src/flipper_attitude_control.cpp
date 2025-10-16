@@ -1,7 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <firefighter_interfaces/msg/flipper_command.hpp>
 #include <firefighter_interfaces/msg/flipper_positions.hpp>
-#include <sensor_msgs/msg/imu.hpp>
+#include <nav_msgs/msg/odometry.hpp>            // ✅ Odometry
 #include <memory>
 #include <chrono>
 #include <string>
@@ -18,16 +18,19 @@ public:
         flipper_pub_ = this->create_publisher<firefighter_interfaces::msg::FlipperCommand>(
             "firefighter/flipper_command", 10);
 
-        // IMU 구독자
-        imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/imu", 10,
-            [this](const sensor_msgs::msg::Imu::SharedPtr msg){
-                qx_ = msg->orientation.x;
-                qy_ = msg->orientation.y;
-                qz_ = msg->orientation.z;
-                qw_ = msg->orientation.w;
-                imu_received_ = true;
-                RCLCPP_INFO(this->get_logger(), "✅ IMU received (qx=%.3f, qy=%.3f, qz=%.3f, qw=%.3f)", qx_, qy_, qz_, qw_);
+        // ✅ Odometry 구독자 (/odom 기본 가정)
+        odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+            "/odom", 10,
+            [this](const nav_msgs::msg::Odometry::SharedPtr msg){
+                const auto &q = msg->pose.pose.orientation;
+                qx_ = q.x;
+                qy_ = q.y;
+                qz_ = q.z;
+                qw_ = q.w;
+                odom_received_ = true;
+                RCLCPP_INFO(this->get_logger(),
+                            "✅ Odom received (qx=%.3f, qy=%.3f, qz=%.3f, qw=%.3f)",
+                            qx_, qy_, qz_, qw_);
             }
         );
 
@@ -80,11 +83,11 @@ public:
 private:
     void timer_callback()
     {
-        // 토픽 수신 대기 상태 출력 (IMU, Flipper만 확인)
-        if (!imu_received_ || !flipper_received_) {
+        // 토픽 수신 대기 상태 출력 (Odom, Flipper만 확인)
+        if (!odom_received_ || !flipper_received_) {
             RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                "⏳ Waiting for topics... (IMU:%s, Flipper:%s)",
-                imu_received_ ? "✅" : "❌",
+                "⏳ Waiting for topics... (Odom:%s, Flipper:%s)",
+                odom_received_ ? "✅" : "❌",
                 flipper_received_ ? "✅" : "❌");
         }
 
@@ -95,7 +98,7 @@ private:
                 last_fl_, last_fr_, last_rl_, last_rr_);
         }
 
-        // rho_dot 계산 (IMU 기반 자세 오차)
+        // rho_dot 계산 (Odometry의 orientation 사용)
         compute_rho_dot();
 
         // FlipperCommand 메시지로 rho_dot 발행
@@ -120,7 +123,7 @@ private:
     {
         const double dt = 0.1; // 10Hz
 
-        // 현재 total 회전 (IMU)
+        // 현재 total 회전 (Odometry quaternion)
         Eigen::Matrix3d R_tot = quaternion_to_rotation_matrix(qx_, qy_, qz_, qw_);
 
         // 목표 R_d = I, 오차 회전 → body 각속도 지령
@@ -205,7 +208,7 @@ private:
 
     // 멤버 변수
     rclcpp::Publisher<firefighter_interfaces::msg::FlipperCommand>::SharedPtr flipper_pub_;
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;     // ✅ 변경: Odometry
     rclcpp::Subscription<firefighter_interfaces::msg::FlipperPositions>::SharedPtr flipper_pos_sub_;
     rclcpp::TimerBase::SharedPtr timer_;
 
@@ -230,7 +233,7 @@ private:
     double w_damp_base_;
 
     // 상태 플래그
-    bool imu_received_ = false;
+    bool odom_received_ = false;         // ✅ 변경: IMU → Odom
     bool flipper_received_ = false;
 };
 

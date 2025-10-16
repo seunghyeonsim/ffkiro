@@ -33,6 +33,7 @@ add_executable(flipper_attitude_control src/flipper_attitude_control.cpp)
 ament_target_dependencies(flipper_attitude_control
   rclcpp
   sensor_msgs
+  nav_msgs                 # ✅ sensor_msgs 대신 nav_msgs
   geometry_msgs
   firefighter_interfaces
 )

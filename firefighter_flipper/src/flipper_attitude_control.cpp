@@ -20,7 +20,7 @@ public:
 
         // ✅ Odometry 구독자 (/odom 기본 가정)
         odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/odom", 10,
+            "/postech/odom", 10,   // ✅ 토픽명 변경
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){
                 const auto &q = msg->pose.pose.orientation;
                 qx_ = q.x;
@@ -33,6 +33,7 @@ public:
                             qx_, qy_, qz_, qw_);
             }
         );
+
 
         // flipper_positions 구독자 (이제 여기서 rho를 직접 갱신)
         flipper_pos_sub_ = this->create_subscription<firefighter_interfaces::msg::FlipperPositions>(

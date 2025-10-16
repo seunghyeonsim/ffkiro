@@ -13,6 +13,7 @@ find_package(builtin_interfaces REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FlipperCommand.msg"
   "msg/FlipperPositions.msg"
+  "msg/FlipperAngleCommand.msg"   # ✅ 새 메시지 추가
   DEPENDENCIES builtin_interfaces
 )
 
